@@ -12,7 +12,6 @@ slowapi
 python-dotenv
 uvicorn
 huggingface_hub
-chromadb==0.4.24
 PyPDF2
 python-multipart
 aiofiles
@@ -24,4 +23,5 @@ pillow
 pdfplumber
 docx
 reportlab
+
 
