@@ -2,13 +2,26 @@ services:
   - type: web
     name: zeraan-chatbot
     env: python
-    plan: free  # or starter, etc.
+    plan: free  # or starter
     buildCommand: ./build.sh
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.12
-      # Add other env vars here (e.g., sync from Render dashboard for secrets)
       - key: GROQ_API_KEY
-        sync: false  # Set manually in dashboard
-      # etc.
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: EMAIL_SENDER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: EMAIL_RECEIVER
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:////app/rag_chatbot.db
+    disks:
+      - name: db
+        mountPath: /app
