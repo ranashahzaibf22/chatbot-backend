@@ -1,11 +1,14 @@
 services:
   - type: web
-    name: chatbot-backend 
+    name: zeraan-chatbot
     env: python
-    startCommand: "uvicorn app:app --host 0.0.0.0 --port 8000"
-    buildCommand: "./build.sh"
+    plan: free  # or starter, etc.
+    buildCommand: ./build.sh
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
-      - key: CARGO_HOME
-        value: /tmp/cargo
-    repo: https://github.com/ranashahzaibf22/chatbot-backend
-    branch: main  
+      - key: PYTHON_VERSION
+        value: 3.12
+      # Add other env vars here (e.g., sync from Render dashboard for secrets)
+      - key: GROQ_API_KEY
+        sync: false  # Set manually in dashboard
+      # etc.
