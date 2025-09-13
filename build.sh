@@ -1,20 +1,20 @@
 #!/bin/bash
 set -e
 
-# Update pip
-pip install --upgrade pip
+# Update pip and setuptools
+pip install --upgrade pip setuptools wheel
 
-# Install system dependencies for building FAISS and numpy
+# Install system dependencies for faiss-cpu and numpy
 apt-get update && apt-get install -y \
     build-essential \
     libopenblas-dev \
     liblapack-dev \
     gfortran
 
-# Install Python dependencies (force source build for faiss-cpu to handle compatibility)
-pip install -r requirements.txt --no-binary faiss-cpu
+# Install Python dependencies with verbose output for debugging
+pip install -r requirements.txt --no-binary faiss-cpu -v
 
-# Download NLTK stopwords (your code requires it)
+# Download NLTK stopwords
 python -c "import nltk; nltk.download('stopwords', quiet=True)"
 
 # Clean up to reduce image size
