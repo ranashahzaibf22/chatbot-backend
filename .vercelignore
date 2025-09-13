@@ -1,0 +1,13 @@
+# Caches and temp files
+model_cache/
+faiss_index/  # Exclude if large; include if needed for RAG
+__pycache__/
+*.pyc
+
+# Local/DB files
+.env
+*.db
+rag_chatbot.db
+
+# Vercel internals
+.vercel/
