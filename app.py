@@ -1278,9 +1278,12 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 async def general_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}")
     return JSONResponse(status_code=500, content={"detail": f"Internal server error: {str(exc)}"})
-
+    
 if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 8000))  # Use $PORT on Render, fallback to 8000 locally
     logger.info("Starting RAG Chatbot server...")
     logger.info(f"Admin username: {settings.admin_username}")
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
