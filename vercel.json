@@ -12,10 +12,9 @@
       "dest": "api/index.py"
     }
   ],
-  "excludeFiles": [
-    "**/model_cache/**",
-    "**/faiss_index/**",
-    ".env",
-    "*.db"
-  ]
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 10
+    }
+  }
 }
