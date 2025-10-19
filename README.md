@@ -73,8 +73,46 @@ DELETE /admin/documents/{id} - Delete document
 GET /admin/leads - View captured leads
 GET /admin/conversations - View chat history
 
-Deployment
-DigitalOcean App Platform
+## Deployment
+
+### Railway (Recommended for Production)
+
+Railway provides easy deployment with automatic environment management:
+
+1. **Connect Repository to Railway**
+   - Go to [Railway](https://railway.app)
+   - Click "New Project" → "Deploy from GitHub repo"
+   - Select your repository
+
+2. **Configure Environment Variables**
+   
+   Required variables:
+   ```
+   GROQ_API_KEY=your_groq_api_key
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=your_secure_password
+   ```
+   
+   Optional variables:
+   ```
+   EMAIL_SENDER=your_email@gmail.com
+   EMAIL_PASSWORD=your_app_password
+   EMAIL_RECEIVER=admin@example.com
+   DATABASE_URL=postgresql://... (use Railway PostgreSQL)
+   ```
+
+3. **Deploy**
+   - Railway will automatically detect the Dockerfile
+   - The app will start on the port specified by Railway's `$PORT` variable
+   - Health check endpoint: `/healthcheck`
+   - Access your app at: `https://your-app.up.railway.app`
+
+4. **Add PostgreSQL (Recommended)**
+   - In Railway dashboard, click "New" → "Database" → "PostgreSQL"
+   - Railway will automatically set the `DATABASE_URL` variable
+   - Restart your service to apply changes
+
+### DigitalOcean App Platform
 
 Connect your repository to DigitalOcean
 Set environment variables in the app settings
