@@ -3,6 +3,7 @@
 # If you prefer Uvicorn directly (e.g., for reload on changes):
 # uvicorn app:app --host 0.0.0.0 --port 8080 --reload
 import os
+import sys
 import logging
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -37,11 +38,15 @@ from sentence_transformers import SentenceTransformer
 import faiss
 from dotenv import load_dotenv
 
+# Configure NLTK data path for Docker/Railway environments
+nltk.data.path.append('/usr/share/nltk_data')
+
 # Ensure NLTK stopwords are present
 try:
     stopwords.words('english')
 except LookupError:
     nltk.download('stopwords', quiet=True, download_dir='/tmp/nltk_data')
+    nltk.data.path.append('/tmp/nltk_data')
   
 # Load environment variables
 load_dotenv()
@@ -147,7 +152,6 @@ class RAGSystem:
             self.groq_client = AsyncGroq(api_key=groq_api_key)
             logger.info("Groq client initialized successfully")
         
-
             # Initialize embedding model and FAISS index
             try:
                 self.embedding_model = SentenceTransformer(
@@ -155,17 +159,20 @@ class RAGSystem:
                     cache_folder="./model_cache",
                     trust_remote_code=False
                 )
-# Lazy load FAISS if files exist (ephemeral on Vercel)
-            index_path = f"{settings.faiss_index_path}/index.faiss"
-            documents_path = f"{settings.faiss_index_path}/documents.npy"
-            if os.path.exists(index_path) and os.path.exists(documents_path):
-                self.index = faiss.read_index(index_path)
-                self.documents = np.load(documents_path, allow_pickle=True).tolist()
-                logger.info(f"Loaded FAISS with {len(self.documents)} docs")
-            else:
-                logger.warning("FAISS files missing; using fallback")
+                # Lazy load FAISS if files exist (ephemeral on Vercel)
+                index_path = f"{settings.faiss_index_path}/index.faiss"
+                documents_path = f"{settings.faiss_index_path}/documents.npy"
+                if os.path.exists(index_path) and os.path.exists(documents_path):
+                    self.index = faiss.read_index(index_path)
+                    self.documents = np.load(documents_path, allow_pickle=True).tolist()
+                    logger.info(f"Loaded FAISS with {len(self.documents)} docs")
+                else:
+                    logger.warning("FAISS files missing; using fallback")
+            except Exception as e:
+                logger.error(f"RAG init error: {str(e)}; using fallback")
         except Exception as e:
-            logger.error(f"RAG init error: {str(e)}; using fallback")
+            logger.error(f"Failed to initialize RAG system: {str(e)}")
+            raise
 
     def get_embedding_model(self):
         if self.embedding_model is None:
@@ -424,6 +431,20 @@ rag_system = RAGSystem()
 
 app = FastAPI(title="ZeRaan Chatbot", version="1.0.0")
 
+# Startup event for logging and initialization
+@app.on_event("startup")
+async def startup_event():
+    logger.info("=" * 50)
+    logger.info("Starting ZeRaan Chatbot Backend")
+    logger.info("=" * 50)
+    logger.info(f"Environment: Railway deployment")
+    logger.info(f"Python version: {sys.version}")
+    logger.info(f"Database URL: {settings.database_url}")
+    logger.info(f"FAISS index path: {settings.faiss_index_path}")
+    logger.info(f"Groq API configured: {bool(os.getenv('GROQ_API_KEY'))}")
+    logger.info(f"Admin username: {settings.admin_username}")
+    logger.info("=" * 50)
+
 limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 app.state.limiter = limiter
 
@@ -443,7 +464,9 @@ app.add_middleware(
         "https://zeraan.dev",
         "https://chatbot-backend.onrender.com",
         "http://localhost:3000",
-        "https://chatbot-backend.vercel.app"  # Add your Vercel URL
+        "https://chatbot-backend.vercel.app",
+        "https://*.railway.app",  # Railway domains
+        "https://*.up.railway.app"  # Railway custom domains
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -764,6 +787,25 @@ def get_conversation_history(db: Session, user_id: str, limit: int = 5) -> List[
         return []
     
 # Routes
+@app.get("/healthcheck")
+async def healthcheck():
+    """Public healthcheck endpoint for Railway and other platforms"""
+    try:
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "service": "chatbot-backend"
+        }
+    except Exception as e:
+        logger.error(f"Healthcheck failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e)
+            }
+        )
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     html_content = """
@@ -1283,4 +1325,6 @@ if __name__ == "__main__":
     logger.info("Starting RAG Chatbot server...")
     logger.info(f"Admin username: {settings.admin_username}")
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting server on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

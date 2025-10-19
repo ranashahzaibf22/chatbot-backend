@@ -1,0 +1,52 @@
+# Git files
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Vercel specific files (not needed for Railway)
+.vercel
+.vercelignore
+vercel.json
+
+# Development files
+.env.local
+.env.development
+
+# Test files
+tests/
+*.test.py
+
+# Documentation
+*.md
+docs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+logs/
