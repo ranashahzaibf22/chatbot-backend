@@ -38,11 +38,15 @@ from sentence_transformers import SentenceTransformer
 import faiss
 from dotenv import load_dotenv
 
+# Configure NLTK data path for Docker/Railway environments
+nltk.data.path.append('/usr/share/nltk_data')
+
 # Ensure NLTK stopwords are present
 try:
     stopwords.words('english')
 except LookupError:
     nltk.download('stopwords', quiet=True, download_dir='/tmp/nltk_data')
+    nltk.data.path.append('/tmp/nltk_data')
   
 # Load environment variables
 load_dotenv()
@@ -148,7 +152,6 @@ class RAGSystem:
             self.groq_client = AsyncGroq(api_key=groq_api_key)
             logger.info("Groq client initialized successfully")
         
-
             # Initialize embedding model and FAISS index
             try:
                 self.embedding_model = SentenceTransformer(
@@ -156,17 +159,20 @@ class RAGSystem:
                     cache_folder="./model_cache",
                     trust_remote_code=False
                 )
-# Lazy load FAISS if files exist (ephemeral on Vercel)
-            index_path = f"{settings.faiss_index_path}/index.faiss"
-            documents_path = f"{settings.faiss_index_path}/documents.npy"
-            if os.path.exists(index_path) and os.path.exists(documents_path):
-                self.index = faiss.read_index(index_path)
-                self.documents = np.load(documents_path, allow_pickle=True).tolist()
-                logger.info(f"Loaded FAISS with {len(self.documents)} docs")
-            else:
-                logger.warning("FAISS files missing; using fallback")
+                # Lazy load FAISS if files exist (ephemeral on Vercel)
+                index_path = f"{settings.faiss_index_path}/index.faiss"
+                documents_path = f"{settings.faiss_index_path}/documents.npy"
+                if os.path.exists(index_path) and os.path.exists(documents_path):
+                    self.index = faiss.read_index(index_path)
+                    self.documents = np.load(documents_path, allow_pickle=True).tolist()
+                    logger.info(f"Loaded FAISS with {len(self.documents)} docs")
+                else:
+                    logger.warning("FAISS files missing; using fallback")
+            except Exception as e:
+                logger.error(f"RAG init error: {str(e)}; using fallback")
         except Exception as e:
-            logger.error(f"RAG init error: {str(e)}; using fallback")
+            logger.error(f"Failed to initialize RAG system: {str(e)}")
+            raise
 
     def get_embedding_model(self):
         if self.embedding_model is None:
@@ -432,7 +438,7 @@ async def startup_event():
     logger.info("Starting ZeRaan Chatbot Backend")
     logger.info("=" * 50)
     logger.info(f"Environment: Railway deployment")
-    logger.info(f"Python version: {os.sys.version}")
+    logger.info(f"Python version: {sys.version}")
     logger.info(f"Database URL: {settings.database_url}")
     logger.info(f"FAISS index path: {settings.faiss_index_path}")
     logger.info(f"Groq API configured: {bool(os.getenv('GROQ_API_KEY'))}")

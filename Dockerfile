@@ -16,8 +16,8 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download NLTK data
-RUN python -c "import nltk; nltk.download('stopwords', quiet=True)"
+# Download NLTK data to a persistent location
+RUN python -c "import nltk; nltk.download('stopwords', download_dir='/usr/share/nltk_data', quiet=True)"
 
 # Copy application code
 COPY . .
